@@ -59,6 +59,9 @@ class Constraint(object):
     def get_config(self):
         return {}
 
+# TODO [1]
+# move MaskWeights(Constraint) and all its
+# dependencies to run_nerf_helpers.py 
 class MaskWeights(Constraint):
 
     def __init__(self, mask):
@@ -172,6 +175,9 @@ class SET_MLP_CIFAR10:
 
         return [rewiredWeights, weightMaskCore]
 
+    # TODO [2]
+    # move weightsEvolution(self) and all
+    # its dependencies to run_nerf.py
     def weightsEvolution(self):
         # this represents the core of the SET procedure. It removes the weights closest to zero in each layer and add new random weights
         self.w1 = self.model.get_layer("sparse_1").get_weights()

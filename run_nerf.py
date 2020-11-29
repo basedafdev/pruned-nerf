@@ -838,6 +838,10 @@ def train():
             np.save(path, net.get_weights())
             print('saved weights at', path)
 
+        # TODO [2]
+        # add weightsEvolution(self) and all
+        # its dependencies before saving the
+        # weights every args.i_weights steps
         if i % args.i_weights == 0:
             for k in models:
                 save_weights(models[k], k, i)

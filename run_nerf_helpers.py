@@ -79,6 +79,9 @@ def get_embedder(multires, i=0):
 
 def init_nerf_model(D=8, W=256, input_ch=3, input_ch_views=3, output_ch=4, skips=[4], use_viewdirs=False):
 
+    # TODO [1]
+    # add MaskWeights(Constraint) and all its
+    # dependencies to dense(W, act=relu)
     relu = tf.keras.layers.ReLU()
     def dense(W, act=relu): return tf.keras.layers.Dense(W, activation=act)
 
