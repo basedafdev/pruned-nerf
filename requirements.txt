@@ -1,0 +1,8 @@
+
+imagemagick
+numpy
+matplotlib
+imageio
+imageio-ffmpeg
+configargparse
+imagemagick
