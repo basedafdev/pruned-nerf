@@ -1,17 +1,16 @@
+from load_blender import load_blender_data
+from load_deepvoxels import load_dv_data
+from load_llff import load_llff_data
+from run_nerf_helpers import *
+import time
+import random
+import json
+import imageio
+import numpy as np
+import tensorflow as tf
+import sys
 import os
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
-
-import sys
-import tensorflow as tf
-import numpy as np
-import imageio
-import json
-import random
-import time
-from run_nerf_helpers import *
-from load_llff import load_llff_data
-from load_deepvoxels import load_dv_data
-from load_blender import load_blender_data
 
 
 tf.compat.v1.enable_eager_execution()
@@ -125,7 +124,7 @@ def render_rays(ray_batch,
         # Extract RGB of each sample position along each ray.
         rgb = tf.math.sigmoid(raw[..., :3])  # [N_rays, N_samples, 3]
 
-        # Add noise to model's predictions for density. Can be used to 
+        # Add noise to model's predictions for density. Can be used to
         # regularize network during training (prevents floater artifacts).
         noise = 0.
         if raw_noise_std > 0.:
@@ -497,12 +496,12 @@ def config_parser():
                         help='specific weights npy file to reload for coarse network')
     parser.add_argument("--random_seed", type=int, default=None,
                         help='fix random seed for repeatability')
-    
+
     # pre-crop options
     parser.add_argument("--precrop_iters", type=int, default=0,
                         help='number of steps to train on central crops')
     parser.add_argument("--precrop_frac", type=float,
-                        default=.5, help='fraction of img taken for central crops')    
+                        default=.5, help='fraction of img taken for central crops')
 
     # rendering options
     parser.add_argument("--N_samples", type=int, default=64,
@@ -576,7 +575,7 @@ def train():
 
     parser = config_parser()
     args = parser.parse_args()
-    
+
     if args.random_seed is not None:
         print('Fixing random seed', args.random_seed)
         np.random.seed(args.random_seed)
@@ -785,11 +784,11 @@ def train():
                     dH = int(H//2 * args.precrop_frac)
                     dW = int(W//2 * args.precrop_frac)
                     coords = tf.stack(tf.meshgrid(
-                        tf.range(H//2 - dH, H//2 + dH), 
-                        tf.range(W//2 - dW, W//2 + dW), 
+                        tf.range(H//2 - dH, H//2 + dH),
+                        tf.range(W//2 - dW, W//2 + dW),
                         indexing='ij'), -1)
                     if i < 10:
-                        print('precrop', dH, dW, coords[0,0], coords[-1,-1])
+                        print('precrop', dH, dW, coords[0, 0], coords[-1, -1])
                 else:
                     coords = tf.stack(tf.meshgrid(
                         tf.range(H), tf.range(W), indexing='ij'), -1)
@@ -897,12 +896,13 @@ def train():
                                                 **render_kwargs_test)
 
                 psnr = mse2psnr(img2mse(rgb, target))
-                
+
                 # Save out the validation image for Tensorboard-free monitoring
                 testimgdir = os.path.join(basedir, expname, 'tboard_val_imgs')
-                if i==0:
+                if i == 0:
                     os.makedirs(testimgdir, exist_ok=True)
-                imageio.imwrite(os.path.join(testimgdir, '{:06d}.png'.format(i)), to8b(rgb))
+                imageio.imwrite(os.path.join(
+                    testimgdir, '{:06d}.png'.format(i)), to8b(rgb))
 
                 with tf.contrib.summary.record_summaries_every_n_global_steps(args.i_img):
 

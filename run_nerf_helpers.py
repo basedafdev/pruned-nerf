@@ -4,9 +4,65 @@ import tensorflow as tf
 import numpy as np
 import imageio
 import json
-
-
+from tensorflow.keras import backend as K
+from tensorflow.keras.layers import Dense, Dropout, Activation, Flatten
 # Misc utils
+
+# GLOBAL VARS FOR SPARSE NN
+EPSILON = 20  # control the sparsity level as discussed in the paper
+ZETA = 0.3  # the fraction of the weights removed
+BATCH_SIZE = 100  # batch size
+MAXEPOCHES = 1000  # number of epochs
+LEARNING_RATE = 0.01  # SGD LEARNING RATE
+NUM_CLASSES = 10  # NUMBER OF CLASSES
+MOMENTUM = 0.9  # SGD momentum
+
+
+class Constraint(object):
+
+    def __call__(self, w):
+        return w
+
+    def get_config(self):
+        return {}
+
+
+class MaskWeights(Constraint):
+
+    def __init__(self, mask):
+        self.mask = mask
+        self.mask = K.cast(self.mask, K.floatx())
+
+    def __call__(self, w):
+        w = w * self.mask
+        return w
+
+    def get_config(self):
+        return {'mask': self.mask}
+
+
+def find_first_pos(array, value):
+    idx = (np.abs(array - value)).argmin()
+    return idx
+
+
+def find_last_pos(array, value):
+    idx = (np.abs(array - value))[::-1].argmin()
+    return array.shape[0] - idx
+
+
+def createWeightsMask(epsilon, noRows, noCols):
+    # generate an Erdos Renyi sparse weights mask
+    mask_weights = np.random.rand(noRows, noCols)
+    prob = 1 - (epsilon * (noRows + noCols)) / \
+        (noRows * noCols)  # normal tp have 8x connections
+    mask_weights[mask_weights < prob] = 0
+    mask_weights[mask_weights >= prob] = 1
+    noParameters = np.sum(mask_weights)
+    print("Create Sparse Matrix: No parameters, NoRows, NoCols ",
+          noParameters, noRows, noCols)
+    return [noParameters, mask_weights]
+
 
 def img2mse(x, y): return tf.reduce_mean(tf.square(x - y))
 
@@ -83,7 +139,10 @@ def init_nerf_model(D=8, W=256, input_ch=3, input_ch_views=3, output_ch=4, skips
     # add MaskWeights(Constraint) and all its
     # dependencies to dense(W, act=relu)
     relu = tf.keras.layers.ReLU()
-    def dense(W, act=relu): return tf.keras.layers.Dense(W, activation=act)
+
+    def dense(W, name, mask=None, act=relu):
+
+        return Dense(W, name=name, activation=act, kernel_constraint=mask)
 
     print('MODEL', input_ch, input_ch_views, type(
         input_ch), type(input_ch_views), use_viewdirs)
@@ -91,33 +150,45 @@ def init_nerf_model(D=8, W=256, input_ch=3, input_ch_views=3, output_ch=4, skips
     input_ch_views = int(input_ch_views)
 
     inputs = tf.keras.Input(shape=(input_ch + input_ch_views))
+
     inputs_pts, inputs_views = tf.split(inputs, [input_ch, input_ch_views], -1)
+
     inputs_pts.set_shape([None, input_ch])
+
     inputs_views.set_shape([None, input_ch_views])
 
     print(inputs.shape, inputs_pts.shape, inputs_views.shape)
     outputs = inputs_pts
+
     for i in range(D):
-        outputs = dense(W)(outputs)
+        layer_name = "sparse_" + str(i)
+        print("Creating layer ", i, "with ", outputs.shape[1], "inputs")
+        if (i == 0):
+            outputs = dense(W, layer_name, mask=None)(outputs)
+        else:
+            noP, mask_weights = createWeightsMask(
+                EPSILON, int(outputs.shape[1]), W)
+            outputs = dense(W, layer_name, MaskWeights(mask_weights))(outputs)
         if i in skips:
             outputs = tf.concat([inputs_pts, outputs], -1)
 
     if use_viewdirs:
-        alpha_out = dense(1, act=None)(outputs)
-        bottleneck = dense(256, act=None)(outputs)
+        alpha_out = dense(1, "alpha_out", act=None)(outputs)
+        bottleneck = dense(256, "bottleneck", act=None)(outputs)
         inputs_viewdirs = tf.concat(
             [bottleneck, inputs_views], -1)  # concat viewdirs
         outputs = inputs_viewdirs
         # The supplement to the paper states there are 4 hidden layers here, but this is an error since
         # the experiments were actually run with 1 hidden layer, so we will leave it as 1.
         for i in range(1):
-            outputs = dense(W//2)(outputs)
-        outputs = dense(3, act=None)(outputs)
+            outputs = dense(W//2, "input_views")(outputs)
+        outputs = dense(3, "rgb", act=None)(outputs)
         outputs = tf.concat([outputs, alpha_out], -1)
     else:
-        outputs = dense(output_ch, act=None)(outputs)
+        outputs = dense(output_ch, "final_layer", act=None)(outputs)
 
     model = tf.keras.Model(inputs=inputs, outputs=outputs)
+    print(model.layers)
     return model
 
 
