@@ -142,7 +142,7 @@ def init_nerf_model(D=8, W=256, input_ch=3, input_ch_views=3, output_ch=4, skips
 
     relu = tf.keras.layers.ReLU()
 
-    def dense(W, name, mask=None,act=relu):
+    def dense(W, name, mask=None, act=relu):
 
         return Dense(W, name=name, activation=act, kernel_constraint=mask)
 
@@ -193,7 +193,7 @@ def init_nerf_model(D=8, W=256, input_ch=3, input_ch_views=3, output_ch=4, skips
         outputs = dense(3, "rgb", act=None)(outputs)
         outputs = tf.concat([outputs, alpha_out], -1)
     else:
-        outputs = dense(output_ch, "final_layer", act=None)(outputs)
+        outputs = dense(output_ch, "dense_layer", act=None)(outputs)
 
     model = tf.keras.Model(inputs=inputs, outputs=outputs)
 

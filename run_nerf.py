@@ -14,6 +14,39 @@ os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 
 tf.compat.v1.enable_eager_execution()
+# Global weight variables, can be dynamically allocated given depth
+W = []
+W_RELU = []
+W_MESH = []
+
+
+def rewireMask(weights, noWeights):
+    # rewire weight matrix
+
+    # remove zeta largest negative and smallest positive weights
+    values = np.sort(weights.ravel())
+    firstZeroPos = find_first_pos(values, 0)
+    lastZeroPos = find_last_pos(values, 0)
+    largestNegative = values[int((1-ZETA) * firstZeroPos)]
+    smallestPositive = values[int(min(
+        values.shape[0] - 1, lastZeroPos + ZETA * (values.shape[0] - lastZeroPos)))]
+    rewiredWeights = weights.copy()
+    rewiredWeights[rewiredWeights > smallestPositive] = 1
+    rewiredWeights[rewiredWeights < largestNegative] = 1
+    rewiredWeights[rewiredWeights != 1] = 0
+    weightMaskCore = rewiredWeights.copy()
+
+    # add zeta random weights
+    nrAdd = 0
+    noRewires = noWeights - np.sum(rewiredWeights)
+    while (nrAdd < noRewires):
+        i = np.random.randint(0, rewiredWeights.shape[0])
+        j = np.random.randint(0, rewiredWeights.shape[1])
+        if (rewiredWeights[i, j] == 0):
+            rewiredWeights[i, j] = 1
+            nrAdd += 1
+
+    return [rewiredWeights, weightMaskCore]
 
 
 def batchify(fn, chunk):
