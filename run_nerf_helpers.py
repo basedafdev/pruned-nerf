@@ -142,7 +142,7 @@ def init_nerf_model(D=8, W=256, input_ch=3, input_ch_views=3, output_ch=4, skips
 
     relu = tf.keras.layers.ReLU()
 
-    def dense(W, name, mask=None, act=relu):
+    def dense(W, name, mask=None,act=relu):
 
         return Dense(W, name=name, activation=act, kernel_constraint=mask)
 
@@ -161,10 +161,14 @@ def init_nerf_model(D=8, W=256, input_ch=3, input_ch_views=3, output_ch=4, skips
         layer_name = "sparse_" + str(i)
         relu_name = "srelu" + str(i)
         print("Creating layer ", i, "with ", outputs.shape[1], "inputs")
+        layer_activation = tf.keras.layers.ReLU(name=relu_name)
+        layer_regularization = Dropout(0.3)
         if (i == 0):
             # first dense layer has no mask
             outputs = dense(W, layer_name,
                             mask=None)(outputs)
+            outputs = layer_activation(outputs)
+            outputs = layer_regularization(outputs)
 
         else:
             # create mask for current layer connected with previous layer
@@ -172,6 +176,8 @@ def init_nerf_model(D=8, W=256, input_ch=3, input_ch_views=3, output_ch=4, skips
                 EPSILON, int(outputs.shape[1]), W)
             outputs = dense(W, layer_name, mask=MaskWeights(
                 mask_weights))(outputs)
+            outputs = layer_activation(outputs)
+            outputs = layer_regularization(outputs)
         if i in skips:
             outputs = tf.concat([inputs_pts, outputs], -1)
     if use_viewdirs:
