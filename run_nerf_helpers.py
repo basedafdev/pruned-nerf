@@ -160,12 +160,10 @@ def init_nerf_model(D=8, W=256, input_ch=3, input_ch_views=3, output_ch=4, skips
     for i in range(D):
         layer_name = "sparse_" + str(i)
         relu_name = "srelu" + str(i)
-        relu_activation = SReLU(name=relu_name)
-        dropout_regularization = Dropout(0.3)
         print("Creating layer ", i, "with ", outputs.shape[1], "inputs")
         if (i == 0):
             # first dense layer has no mask
-            outputs = dense(W, layer_name, act=relu_activation,
+            outputs = dense(W, layer_name,
                             mask=None)(outputs)
 
         else:
@@ -173,8 +171,7 @@ def init_nerf_model(D=8, W=256, input_ch=3, input_ch_views=3, output_ch=4, skips
             noP, mask_weights = createWeightsMask(
                 EPSILON, int(outputs.shape[1]), W)
             outputs = dense(W, layer_name, mask=MaskWeights(
-                mask_weights), act=relu_activation)(outputs)
-            outputs = dropout_regularization(outputs)
+                mask_weights))(outputs)
         if i in skips:
             outputs = tf.concat([inputs_pts, outputs], -1)
     if use_viewdirs:
