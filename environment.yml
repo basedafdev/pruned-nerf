@@ -1,5 +1,5 @@
 # To run: conda env create -f environment.yml
-name: nerf
+name: prune_nerf
 channels:
     - conda-forge
 dependencies:
@@ -13,3 +13,6 @@ dependencies:
     - imageio-ffmpeg
     - configargparse
     - imagemagick
+    - keras
+    - pip:
+        - git+https://www.github.com/keras-team/keras-contrib.git

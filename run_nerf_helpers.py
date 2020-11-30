@@ -6,6 +6,7 @@ import imageio
 import json
 from tensorflow.keras import backend as K
 from tensorflow.keras.layers import Dense, Dropout, Activation, Flatten
+from keras_contrib.layers.advanced_activations import SReLU
 # Misc utils
 
 # GLOBAL VARS FOR SPARSE NN
@@ -138,6 +139,7 @@ def init_nerf_model(D=8, W=256, input_ch=3, input_ch_views=3, output_ch=4, skips
     # TODO [1]
     # add MaskWeights(Constraint) and all its
     # dependencies to dense(W, act=relu)
+
     relu = tf.keras.layers.ReLU()
 
     def dense(W, name, mask=None, act=relu):
@@ -148,24 +150,21 @@ def init_nerf_model(D=8, W=256, input_ch=3, input_ch_views=3, output_ch=4, skips
         input_ch), type(input_ch_views), use_viewdirs)
     input_ch = int(input_ch)
     input_ch_views = int(input_ch_views)
-
     inputs = tf.keras.Input(shape=(input_ch + input_ch_views))
-
     inputs_pts, inputs_views = tf.split(inputs, [input_ch, input_ch_views], -1)
-
     inputs_pts.set_shape([None, input_ch])
-
     inputs_views.set_shape([None, input_ch_views])
-
-    print(inputs.shape, inputs_pts.shape, inputs_views.shape)
+    #print(inputs.shape, inputs_pts.shape, inputs_views.shape)
     outputs = inputs_pts
 
     for i in range(D):
         layer_name = "sparse_" + str(i)
         print("Creating layer ", i, "with ", outputs.shape[1], "inputs")
         if (i == 0):
+            # first dense layer has no mask
             outputs = dense(W, layer_name, mask=None)(outputs)
         else:
+            # create mask for current layer connected with previous layer
             noP, mask_weights = createWeightsMask(
                 EPSILON, int(outputs.shape[1]), W)
             outputs = dense(W, layer_name, MaskWeights(mask_weights))(outputs)
@@ -188,6 +187,7 @@ def init_nerf_model(D=8, W=256, input_ch=3, input_ch_views=3, output_ch=4, skips
         outputs = dense(output_ch, "final_layer", act=None)(outputs)
 
     model = tf.keras.Model(inputs=inputs, outputs=outputs)
+
     print(model.layers)
     return model
 
