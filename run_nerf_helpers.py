@@ -174,11 +174,9 @@ def init_nerf_model(D=8, W=256, input_ch=3, input_ch_views=3, output_ch=4, skips
                 EPSILON, int(outputs.shape[1]), W)
             outputs = dense(W, layer_name, mask=MaskWeights(
                 mask_weights), act=relu_activation)(outputs)
-            outputs = Dropout(outputs)
-
+            outputs = dropout_regularization(outputs)
         if i in skips:
             outputs = tf.concat([inputs_pts, outputs], -1)
-
     if use_viewdirs:
         alpha_out = dense(1, "alpha_out", act=None)(outputs)
         bottleneck = dense(256, "bottleneck", act=None)(outputs)

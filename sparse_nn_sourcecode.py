@@ -188,6 +188,7 @@ class SET_MLP_CIFAR10:
 
     # TODO [2]
     # move weightsEvolution(self) and all
+    # you can get the weights by calling
     # its dependencies to run_nerf.py
     def weightsEvolution(self):
         # this represents the core of the SET procedure. It removes the weights closest to zero in each layer and add new random weights
