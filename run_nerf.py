@@ -17,7 +17,8 @@ tf.compat.v1.enable_eager_execution()
 # Global weight variables, can be dynamically allocated given depth
 W = []
 W_RELU = []
-W_MESH = []
+NOP = []
+W_MASK = []
 
 
 def rewireMask(weights, noWeights):
@@ -409,7 +410,10 @@ def render_path(render_poses, hwf, chunk, render_kwargs, gt_imgs=None, savedir=N
 
 def create_nerf(args):
     """Instantiate NeRF's MLP model."""
-
+    global NOP
+    global W_MASK
+    global W
+    global W_RELU
     embed_fn, input_ch = get_embedder(args.multires, args.i_embed)
 
     input_ch_views = 0
@@ -419,16 +423,20 @@ def create_nerf(args):
             args.multires_views, args.i_embed)
     output_ch = 4
     skips = [4]
-    model = init_nerf_model(
+    model, noP_list, wm_list, w_list, wsRelu_list = init_nerf_model(
         D=args.netdepth, W=args.netwidth,
         input_ch=input_ch, output_ch=output_ch, skips=skips,
         input_ch_views=input_ch_views, use_viewdirs=args.use_viewdirs)
     grad_vars = model.trainable_variables
     models = {'model': model}
+    NOP = noP_list
+    W_MASK = wm_list
+    W = w_list
+    W_RELU = wsRelu_list
 
     model_fine = None
     if args.N_importance > 0:
-        model_fine = init_nerf_model(
+        model_fine, noP_list_fine, wm_list_fine, w_list_fine, wsRelu_list_fine = init_nerf_model(
             D=args.netdepth_fine, W=args.netwidth_fine,
             input_ch=input_ch, output_ch=output_ch, skips=skips,
             input_ch_views=input_ch_views, use_viewdirs=args.use_viewdirs)
@@ -860,6 +868,19 @@ def train():
 
         dt = time.time()-time0
 
+        def weightsEvolution(model):
+            # this represents the core of the SET procedure. It removes the weights closest to zero in each layer and add new random weights
+
+            D = args.netdepth
+            for i in range(0, D-1):
+                w = model.get_layer("sparse_" + str(i+1)).get_weights()
+                W[i] = w
+                wsReslu = model.get_layer("srelu" + str(i+1)).get_weights()
+                W_RELU[i] = wsReslu
+                noPar = NOP[i]
+                [W_MASK[i], wmCore] = rewireMask(w[0], noPar)
+                W[i] = w[0] * wmCore
+
         #####           end            #####
 
         # Rest is logging
@@ -875,7 +896,9 @@ def train():
         # its dependencies before saving the
         # weights every args.i_weights steps
         if i % args.i_weights == 0:
+
             for k in models:
+                weightsEvolution(models[k])
                 save_weights(models[k], k, i)
 
         if i % args.i_video == 0 and i > 0:

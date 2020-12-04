@@ -157,6 +157,11 @@ def init_nerf_model(D=8, W=256, input_ch=3, input_ch_views=3, output_ch=4, skips
     #print(inputs.shape, inputs_pts.shape, inputs_views.shape)
     outputs = inputs_pts
 
+    noP_list = []  # weight mask
+    wm_list = []  # weight mask
+    w_list = []  # Sparse layer weight list
+    wsRelu_list = []  # weight relu list
+
     for i in range(D):
         layer_name = "sparse_" + str(i)
         relu_name = "srelu" + str(i)
@@ -171,9 +176,14 @@ def init_nerf_model(D=8, W=256, input_ch=3, input_ch_views=3, output_ch=4, skips
             outputs = layer_regularization(outputs)
 
         else:
+
             # create mask for current layer connected with previous layer
             noP, mask_weights = createWeightsMask(
                 EPSILON, int(outputs.shape[1]), W)
+            noP_list.append(noP)
+            wm_list.append(mask_weights)
+            w_list.append(None)
+            wsRelu_list.append(None)
             outputs = dense(W, layer_name, mask=MaskWeights(
                 mask_weights))(outputs)
             outputs = layer_activation(outputs)
@@ -193,12 +203,12 @@ def init_nerf_model(D=8, W=256, input_ch=3, input_ch_views=3, output_ch=4, skips
         outputs = dense(3, "rgb", act=None)(outputs)
         outputs = tf.concat([outputs, alpha_out], -1)
     else:
-        outputs = dense(output_ch, "dense_layer", act=None)(outputs)
+        outputs = dense(output_ch, "dense_" + str(D), act=None)(outputs)
 
     model = tf.keras.Model(inputs=inputs, outputs=outputs)
 
     print(model.layers)
-    return model
+    return (model, noP_list, wm_list, w_list, wsRelu_list)
 
 
 # Ray helpers
