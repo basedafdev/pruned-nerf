@@ -867,7 +867,7 @@ def train():
         optimizer.apply_gradients(zip(gradients, grad_vars))
 
         dt = time.time()-time0
-
+        '''
         def weightsEvolution(model):
             # this represents the core of the SET procedure. It removes the weights closest to zero in each layer and add new random weights
 
@@ -880,7 +880,7 @@ def train():
                 noPar = NOP[i]
                 [W_MASK[i], wmCore] = rewireMask(w[0], noPar)
                 W[i] = w[0] * wmCore
-
+        '''
         #####           end            #####
 
         # Rest is logging
@@ -896,9 +896,9 @@ def train():
         # its dependencies before saving the
         # weights every args.i_weights steps
         if i % args.i_weights == 0:
-
+            print("weightsEvolution")
             for k in models:
-                weightsEvolution(models[k])
+                # weightsEvolution(models[k])
                 save_weights(models[k], k, i)
 
         if i % args.i_video == 0 and i > 0:
