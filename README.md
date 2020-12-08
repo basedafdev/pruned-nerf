@@ -8,7 +8,7 @@ python setup.py install
 cd ..
 
 conda env create -f environment.yml
-conda activate nerf
+conda activate prune_nerf
 bash download_example_data.sh
 python run_nerf.py --config config_fern.txt
 tensorboard --logdir=logs/summaries --port=6006
