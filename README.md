@@ -10,6 +10,7 @@ cd ..
 conda env create -f environment.yml
 conda activate prune_nerf
 bash download_example_data.sh
+mkdir logs/fern_test/tboard_val_imgs
 python run_nerf.py --config config_fern.txt
 tensorboard --logdir=logs/summaries --port=6006
 ```
