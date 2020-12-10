@@ -15,6 +15,18 @@ python run_nerf.py --config config_fern.txt
 tensorboard --logdir=logs/summaries --port=6006
 ```
 
+## **Data Feed Pipeline**
+
+![Alt Text](./imgs/pipeline.jpg)
+
+## **NN Architecture**
+
+![Alt Text](./imgs/architecture.svg)
+
+### **Proposed Architecture**
+
+![Alt Text](./imgs/sparse.svg)
+
 ## Sources
 
 ```
