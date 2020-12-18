@@ -15,7 +15,7 @@ os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 tf.compat.v1.enable_eager_execution()
 # Global weight variables, can be dynamically allocated given depth
-W = []
+Wei = []
 W_RELU = []
 NOP = []
 W_MASK = []
@@ -97,7 +97,7 @@ def render_rays(ray_batch,
         for sampling along a ray, including: ray origin, ray direction, min
         dist, max dist, and unit-magnitude viewing direction.
       network_fn: function. Model for predicting RGB and density at each point
-        in space.
+        in space.fmo
       network_query_fn: function used for passing queries to network_fn.
       N_samples: int. Number of different times to sample along each ray.
       retraw: bool. If True, include model's raw, unprocessed predictions.
@@ -412,7 +412,7 @@ def create_nerf(args):
     """Instantiate NeRF's MLP model."""
     global NOP
     global W_MASK
-    global W
+    global Wei
     global W_RELU
     embed_fn, input_ch = get_embedder(args.multires, args.i_embed)
 
@@ -431,7 +431,7 @@ def create_nerf(args):
     models = {'model': model}
     NOP = noP_list
     W_MASK = wm_list
-    W = w_list
+    Wei = w_list
     W_RELU = wsRelu_list
 
     model_fine = None
@@ -602,7 +602,7 @@ def config_parser():
                         help='frequency of console printout and metric loggin')
     parser.add_argument("--i_img",     type=int, default=500,
                         help='frequency of tensorboard image logging')
-    parser.add_argument("--i_weights", type=int, default=10000,
+    parser.add_argument("--i_weights", type=int, default=10000, # switched to 1000
                         help='frequency of weight ckpt saving')
     parser.add_argument("--i_testset", type=int, default=50000,
                         help='frequency of testset saving')
@@ -874,12 +874,12 @@ def train():
             D = args.netdepth
             for i in range(0, D-1):
                 w = model.get_layer("sparse_" + str(i+1)).get_weights()
-                W[i] = w
+                Wei[i] = w
                 wsReslu = model.get_layer("srelu" + str(i+1)).get_weights()
                 W_RELU[i] = wsReslu
                 noPar = NOP[i]
                 [W_MASK[i], wmCore] = rewireMask(w[0], noPar)
-                W[i] = w[0] * wmCore
+                Wei[i] = w[0] * wmCore
 
         #####           end            #####
 
@@ -896,9 +896,9 @@ def train():
         # its dependencies before saving the
         # weights every args.i_weights steps
         if i % args.i_weights == 0:
-            print("weightsEvolution")
             for k in models:
-                weightsEvolution(models[k])
+                if k == 'model':
+                    weightsEvolution(models[k])
                 save_weights(models[k], k, i)
 
         if i % args.i_video == 0 and i > 0:

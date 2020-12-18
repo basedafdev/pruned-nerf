@@ -6,8 +6,7 @@ import imageio
 import json
 from tensorflow.keras import backend as K
 from tensorflow.keras.layers import Dense, Dropout, Activation, Flatten
-from keras_contrib.layers.advanced_activations.srelu import SReLU
-# Misc utils
+# Misc utilsS
 
 # GLOBAL VARS FOR SPARSE NN
 EPSILON = 20  # control the sparsity level as discussed in the paper
@@ -196,8 +195,7 @@ def init_nerf_model(D=8, W=256, input_ch=3, input_ch_views=3, output_ch=4, skips
         inputs_viewdirs = tf.concat(
             [bottleneck, inputs_views], -1)  # concat viewdirs
         outputs = inputs_viewdirs
-        # The supplement to the paper states there are 4 hidden layers here, but this is an error since
-        # the experiments were actually run with 1 hidden layer, so we will leave it as 1.
+        # The supplement to the paper states there are 4 hiddxier, so we will leave it as 1.
         for i in range(1):
             outputs = dense(W//2, "input_views")(outputs)
         outputs = dense(3, "rgb", act=None)(outputs)
