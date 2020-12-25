@@ -45,9 +45,15 @@ Check out [`extract_mesh.ipynb`](https://github.com/bmild/nerf/blob/master/extra
 
 ** This description is from original nerf [README.md](https://github.com/bmild/nerf) **
 
-## Sources
+## References
 
 ```
-https://github.com/bmild/nerf
-https://github.com/dcmocanu/sparse-evolutionary-artificial-neural-networks
+@misc{mildenhall2020nerf,
+      title={NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis}, 
+      author={Ben Mildenhall and Pratul P. Srinivasan and Matthew Tancik and Jonathan T. Barron and Ravi Ramamoorthi and Ren Ng},
+      year={2020},
+      eprint={2003.08934},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
+}
 ```
